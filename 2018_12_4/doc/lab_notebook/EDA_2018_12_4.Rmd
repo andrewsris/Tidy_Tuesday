@@ -1,0 +1,107 @@
+---
+title: "Medium Data Science Articles"
+author: "Andrew Srisuwananukorn"
+date: "12/4/2018"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+## Upload the data
+
+```{r}
+df <- read_csv("~/Box/Tidy_Tuesday/2018_12_4/data/1_original/medium_datasci.csv")
+
+```
+
+#Brief exploration
+```{r}
+glimpse(df)
+
+skimr::skim(df)
+```
+
+#Explore Tag columns
+Are the tags mutually exclusive?
+
+```{r}
+tags_df <- df %>% select(starts_with("tag"))
+num_tags <- tags_df %>% 
+  summarise_at(1:ncol(.), ~sum(.)) %>% 
+  gather(tag, n) %>% 
+  mutate(tag = str_remove(tag, "tag_")) %>% 
+  arrange(desc(n))
+num_tags
+```
+
+#Gather Tags example
+```{r}
+tags2_df <- df %>% select("x1", starts_with("tag"))
+tags2_df
+tags2_df %>% gather(tag, value, -x1)
+
+# tags2_df %>% select(-starts_with("tag"))
+tags2_df %>% gather(tag, value, starts_with("tag"))
+```
+
+
+#Tidying data
+Here are the column names
+```{r}
+colnames(df)
+```
+
+
+```{r}
+tidy_df <- df  %>% 
+  unite("date", c("month", "day", "year"), remove = TRUE) %>% 
+  mutate(date = mdy(date)) %>% 
+  gather(tag, tag_value, starts_with("tag")) %>% 
+  mutate(tag = str_remove(tag, "tag_")) %>% 
+  filter(tag_value == 1) %>% 
+  select(-tag_value)
+
+tidy_df
+```
+
+#Top ten Author Plots
+```{r}
+tidy_df %>% 
+  count(author) %>% 
+  filter(!is.na(author)) %>% 
+  arrange(desc(n)) %>% head(n=10) %>% 
+  ggplot(aes(x = fct_reorder(author,n), y = n)) + 
+  geom_point() + 
+  coord_flip() + 
+  ggtitle("Top Ten Authors") + 
+  labs(x = "Author", y = "# of Articles" )
+```
+
+## Plot histogram based on date
+Interesting to note that there are much fewer articles in December
+```{r}
+tidy_df %>% ggplot(aes(x=date, color=tag)) + geom_histogram(binwidth=7) + scale_x_date(date_breaks="month") + theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Articles by Tag")
+
+tidy_df %>% ggplot(aes(x=date, color=tag)) + geom_freqpoly(binwidth=7) + scale_x_date(date_breaks = "month") + 
+theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Articles by Tag")
+```
+
+#Focus on December
+```{r}
+tidy_df %>% filter(date >= mdy("11_1_17"), date <= mdy("1_31_18")) %>% ggplot(aes(x=date, color=tag)) + geom_bar(binwidth=1) + scale_x_date(date_breaks = "week") + theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Articles In December 2017")
+```
+
+#Addendum
+After posting, Nathanmoore @nmoorenz suggested that I use fill=tag instead of colour=tag
+
+```{r}
+tidy_df %>% ggplot(aes(x=date, fill=tag)) + geom_histogram(binwidth=7) + scale_x_date(date_breaks="month") + theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Articles by Tag")
+
+tidy_df %>% filter(date >= mdy("11_1_17"), date <= mdy("1_31_18")) %>% ggplot(aes(x=date, fill=tag)) + geom_bar(binwidth=1) + scale_x_date(date_breaks = "week") + theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Articles In December 2017")
+```
+
+

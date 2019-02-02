@@ -1,0 +1,54 @@
+---
+title: "EDA"
+author: "Andrew Srisuwananukorn"
+date: "1/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Load Packages
+```{r}
+library(tidyverse)
+library(hexbin)
+
+tidytuesday_tweets <- readRDS("~/Box/Tidy_Tuesday/2019_01_01/data/1_original/tidytuesday_tweets.rds")
+rstats_tweets <- readRDS("~/Box/Tidy_Tuesday/2019_01_01/data/1_original/rstats_tweets.rds")
+```
+
+#play with it
+
+```{r}
+fav_ret_df <- rstats_tweets %>% select(user_id, status_id, screen_name, favorite_count, retweet_count)
+
+fav_ret_df %>% ggplot() + 
+  geom_hex(aes(x=favorite_count, y=retweet_count), bins=100) + 
+  scale_fill_gradient(name = "count", trans = "log", breaks = 10^(0:6)) + 
+  ggtitle("Hexbin Plot of #Rstats Favorites and Retweets") +
+  xlab("Favorite Count") + ylab("Retweet Count")
+```
+
+What is that tweet?
+```{r}
+fav_ret_df %>% filter(favorite_count > 4000)
+```
+
+Get URL of that tweet
+```{r}
+best_tweet <- rstats_tweets %>% filter(status_id == "972042199675359232")
+best_tweet %>% select(ext_media_t.co) %>% unlist()
+```
+
+
+#Narrow down to favorites < 1000 and Retweets < 500
+```{r}
+fav_ret_df %>% ggplot() + 
+  geom_hex(aes(x=favorite_count, y=retweet_count), bins=100) + 
+  scale_fill_gradient(name = "count", trans = "log", breaks = 10^(0:6)) + 
+  xlim(0,1000) + ylim(0,500) + 
+  ggtitle("Hexbin Plot of #Rstats Favorites and Retweets") +
+  xlab("Favorite Count") + ylab("Retweet Count")
+```
+
